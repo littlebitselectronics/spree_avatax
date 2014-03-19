@@ -61,7 +61,6 @@ module Spree
           tax_adjustment.label = "Tax"
           tax_adjustment.originator_type = "Spree::TaxRate"
           tax_adjustment.amount = invoice_tax["total_tax"]
-          tax_adjustment.from_avalara = true
           tax_adjustment.save!
 
           save!
