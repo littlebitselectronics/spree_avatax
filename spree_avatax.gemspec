@@ -2,7 +2,7 @@
 Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.name        = 'spree_avatax'
-  s.version     = '2.0.8.beta'
+  s.version     = '2.2.0.beta'
   s.summary     = 'Avatax extension for Spree'
   s.description = "Spree extension to retrieve tax rates via Avalara's REST API"
   s.required_ruby_version = '>= 1.9.3'
@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.requirements << 'none'
 
-  s.add_dependency 'spree_core', '~> 2.0.8.beta'
+  s.add_dependency 'spree_core', '~> 2.2.0'
 
   s.add_dependency 'hashie', '~> 2.0.5'
   s.add_dependency 'multi_json'

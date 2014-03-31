@@ -2,29 +2,30 @@ module Spree
   TaxRate.class_eval do
 
     # Creates necessary tax adjustments for the order.
-    def adjust(order)
+    def adjust(order, item)
       label = create_label
       if order.tax_zone.name =~ /Avalara/
+        order.adjustments.tax.delete_all
         order.commit_avatax_invoice if order.ship_address
       else
-        if included_in_price
-          if Zone.default_tax.contains? order.tax_zone
-            order.line_items.each { |line_item| create_adjustment(label, line_item, line_item) }
-          else
-            amount = -1 * calculator.compute(order)
-            label = Spree.t(:refund) + label
-            order.adjustments.create({ amount: amount,
-                                       source: order,
-                                       originator: self,
-                                       state: "closed",
-                                       label: label }, without_protection: true)
-          end
-        else
-          create_adjustment(label, order, order)
+        amount = compute_amount(item)
+        return if amount == 0
+
+        included = included_in_price && default_zone_or_zone_match?(item)
+
+        if amount < 0
+          label = Spree.t(:refund) + ' ' + create_label
         end
 
+        self.adjustments.create!({
+          :adjustable => item,
+          :amount => amount,
+          :order => order,
+          :label => label || create_label,
+          :included => included
+        })
       end
     end
-      
+
   end
 end

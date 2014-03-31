@@ -59,7 +59,7 @@ module Spree
 
           tax_adjustment = self.adjustments.new
           tax_adjustment.label = "Tax"
-          tax_adjustment.originator_type = "Spree::TaxRate"
+          tax_adjustment.source_type = "Spree::TaxRate"
           tax_adjustment.amount = invoice_tax["total_tax"]
           tax_adjustment.save!
 
@@ -69,7 +69,7 @@ module Spree
           logger.debug 'Avatax Commit Failed!'
           logger.debug error.to_s
         end
-        
+
       end
 
 
