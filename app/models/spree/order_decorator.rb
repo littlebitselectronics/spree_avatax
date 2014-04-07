@@ -70,23 +70,12 @@ module Spree
 
         invoice_tax = Avalara.get_tax(invoice)
 
-        ship_tax = invoice_tax["tax_lines"].map{|line| line['tax'] if line['tax_code'] == 'FR000000' }.compact.first
-
         #Tax
         tax_adjustment = self.adjustments.new
         tax_adjustment.label = "Tax"
         tax_adjustment.originator_type = "Spree::TaxRate"
-        tax_adjustment.amount = invoice_tax["total_tax"].to_f - ship_tax.to_f
+        tax_adjustment.amount = invoice_tax["total_tax"].to_f
         tax_adjustment.save!
-
-        #ship tax
-        if ship_tax.to_f > 0
-          tax_adjustment = self.adjustments.new
-          tax_adjustment.label = "Shipping Tax"
-          tax_adjustment.originator_type = "Spree::TaxRate"
-          tax_adjustment.amount = ship_tax
-          tax_adjustment.save!
-        end
 
         save!
 
