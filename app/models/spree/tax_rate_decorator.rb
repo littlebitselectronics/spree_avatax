@@ -5,7 +5,7 @@ module Spree
     def adjust(order)
       label = create_label
       if order.tax_zone.name =~ /Avalara/
-        order.commit_avatax_invoice if order.ship_address
+        order.commit_avatax_invoice('SalesOrder') if order.ship_address
       else
         if included_in_price
           if Zone.default_tax.contains? order.tax_zone

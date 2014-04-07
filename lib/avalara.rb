@@ -47,10 +47,8 @@ module Avalara
   end
 
   def self.company_code
-    #configuration.company_code
-    "APITrialCompany"
+    configuration.company_code
   end
-
   def self.company_code=(company_code)
     configuration.company_code = company_code
   end

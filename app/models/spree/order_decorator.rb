@@ -1,7 +1,15 @@
 module Spree
   Order.class_eval do
 
-    def commit_avatax_invoice
+    #moved to main app
+    #Spree::Order.state_machine.after_transition :to => :complete, :do => :create_invoice
+
+    def create_invoice
+      commit_avatax_invoice('SalesInvoice')
+    end
+
+    def commit_avatax_invoice(doc_type)
+
       begin
         matched_line_items = self.line_items.select do |line_item|
           line_item.taxable?
@@ -50,34 +58,36 @@ module Spree
         )
         invoice_addresses << invoice_address
 
+        exemption_no = self.user.try(:tax_exempt) ? 'TRUE' : nil
+
         invoice = Avalara::Request::Invoice.new(
             :customer_code => self.email,
             :doc_date => Date.today,
-            :doc_type => 'SalesInvoice',
+            :doc_type => doc_type,
+            :doc_code => self.number,
             :company_code => AvataxConfig.company_code,
             :reference_code => self.number,
             :commit => 'true',
-            :discount => discount
+            :discount => discount,
+            :exemption_no => exemption_no
         )
 
         invoice.addresses = invoice_addresses
         invoice.lines = invoice_lines
 
-        #Log request
-        #logger.debug 'Avatax Request - '
-        #logger.debug invoice.to_s
-
 
         invoice_tax = Avalara.get_tax(invoice)
 
         #Tax
-        tax_adjustment = self.adjustments.new
-        tax_adjustment.label = "Tax"
-        tax_adjustment.originator_type = "Spree::TaxRate"
-        tax_adjustment.amount = invoice_tax["total_tax"].to_f
-        tax_adjustment.save!
+        if doc_type == 'SalesOrder'
+          tax_adjustment = self.adjustments.new
+          tax_adjustment.label = "Tax"
+          tax_adjustment.originator_type = "Spree::TaxRate"
+          tax_adjustment.amount = invoice_tax["total_tax"].to_f
+          tax_adjustment.save!
 
-        save!
+          save!
+        end
 
       rescue => error
         logger.debug 'Avatax Commit Failed!'
