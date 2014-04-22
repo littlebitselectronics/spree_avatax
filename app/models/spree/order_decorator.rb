@@ -5,7 +5,9 @@ module Spree
     #Spree::Order.state_machine.after_transition :to => :complete, :do => :create_invoice
 
     def create_invoice
-      commit_avatax_invoice('SalesInvoice')
+      if self.tax_zone.name =~ /Avalara/
+        commit_avatax_invoice('SalesInvoice')
+      end
     end
 
     def commit_avatax_invoice(doc_type)
