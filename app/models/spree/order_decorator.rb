@@ -44,7 +44,7 @@ module Spree
             :origin_code => '1',
             :qty => 1,
             :amount => self.ship_total.to_s,
-            :tax_code => 'FR000000',
+            :tax_code => 'FR',
             :discounted => true,
             :item_code => 'SHIPPING'
         )
