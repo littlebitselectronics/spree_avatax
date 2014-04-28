@@ -6,7 +6,7 @@ module Spree
       label = create_label
       if order.tax_zone.name =~ /Avalara/
         order.adjustments.tax.delete_all
-        order.commit_avatax_invoice if order.ship_address
+        order.commit_avatax_invoice('SalesOrder') if order.ship_address
       else
         amount = compute_amount(item)
         return if amount == 0

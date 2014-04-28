@@ -5,6 +5,7 @@ class Avalara::Configuration
   attr_writer :endpoint
   attr_accessor :password
   attr_accessor :username
+  attr_accessor :company_code
   attr_writer :version
 
   ##
