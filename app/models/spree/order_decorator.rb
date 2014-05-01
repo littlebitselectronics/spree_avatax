@@ -5,7 +5,7 @@ module Spree
     #Spree::Order.state_machine.after_transition :to => :complete, :do => :create_invoice
 
     def create_invoice
-      if self.tax_zone.name =~ /Avalara/
+      if self.tax_zone.name =~ /Avalara/ && payments.select{|p| p.payment_method.type == 'Spree::PaymentMethod::PurchaseOrder' || p.payment_method.type == 'Spree::PaymentMethod::NoCharge' }.empty?
         commit_avatax_invoice('SalesInvoice')
       end
     end
