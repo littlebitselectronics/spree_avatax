@@ -84,7 +84,7 @@ module Spree
         if doc_type == 'SalesOrder'
           tax_adjustment = self.adjustments.new
           tax_adjustment.label = "Tax"
-          tax_adjustment.originator_type = "Spree::TaxRate"
+          tax_adjustment.source_type = "Spree::TaxRate"
           tax_adjustment.amount = invoice_tax["total_tax"].to_f
           tax_adjustment.save!
 
