@@ -33,7 +33,8 @@ module Spree
               :qty => matched_line_item.quantity.to_s,
               :amount => matched_line_amount.to_s,
               :discounted => true,
-              :item_code => matched_line_item.variant.sku
+              :item_code => matched_line_item.variant.sku,
+              :tax_code => matched_line_item.is_gift_card? ? 'NT' : ''
           )
           invoice_lines << invoice_line
         end
@@ -78,7 +79,6 @@ module Spree
         invoice.lines = invoice_lines
 
         invoice_tax = Avalara.get_tax(invoice)
-
         #Tax
         if doc_type == 'SalesOrder'
           tax_adjustment = self.adjustments.new

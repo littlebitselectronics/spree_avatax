@@ -2,7 +2,7 @@ module Spree
   LineItem.class_eval do
 
     def taxable?
-      self.tax_category.nil? or self.is_gift_card? ? false : true
+      self.tax_category.nil? ? false : true
     end
 
   end
