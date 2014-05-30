@@ -2,7 +2,7 @@ module Spree
   TaxRate.class_eval do
 
     # Creates necessary tax adjustments for the order.
-    def adjust(order, item)
+    def adjust(order, item = nil)
       label = create_label
       if order.tax_zone.name =~ /Avalara/
         order.adjustments.tax.delete_all

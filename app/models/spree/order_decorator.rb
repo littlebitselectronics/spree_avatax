@@ -78,6 +78,7 @@ module Spree
         invoice.addresses = invoice_addresses
         invoice.lines = invoice_lines
 
+        Rails.logger.info "Avatax POST started"
         invoice_tax = Avalara.get_tax(invoice)
         #Tax
         if doc_type == 'SalesOrder'
