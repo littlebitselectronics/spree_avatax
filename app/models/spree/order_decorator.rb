@@ -82,6 +82,7 @@ module Spree
         invoice_tax = Avalara.get_tax(invoice)
         #Tax
         if doc_type == 'SalesOrder'
+          self.adjustments.tax.destroy_all
           tax_adjustment = self.adjustments.new
           tax_adjustment.label = "Tax"
           tax_adjustment.source_type = "Spree::TaxRate"
