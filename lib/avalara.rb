@@ -108,6 +108,33 @@ module Avalara
     raise Error.new(e)
   end
 
+  def self.validates_address(address)
+    uri = [endpoint, version, 'address', 'validate?'].join('/')
+
+    uri += %Q(Line1=#{address.address1}&Line2=#{address.address2}&City=#{address.city}&Region=#{address.state.abbr}&PostalCode=#{address.zipcode}&Country=#{address.country.iso})
+
+    response = API.get(uri,
+                        :headers => API.headers_for('0'),
+                        :basic_auth => authentication
+    )
+
+    return case response.code
+             when 200..299
+               Response::TaxAddress.new(response)
+             when 400..599
+               raise ApiError.new(Response::TaxAddress.new(response))
+             else
+               raise ApiError.new(response)
+           end
+  rescue Timeout::Error => e
+    raise TimeoutError.new(e)
+  rescue ApiError => e
+    raise e
+  rescue Exception => e
+    raise Error.new(e)
+
+  end
+
   private
 
   def self.authentication
