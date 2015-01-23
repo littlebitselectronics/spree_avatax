@@ -7,6 +7,7 @@ require 'avalara/api'
 require 'avalara/types'
 require 'avalara/request'
 require 'avalara/response'
+require 'addressable/uri'
 
 module Avalara
 
@@ -111,7 +112,9 @@ module Avalara
   def self.validate_address(address)
     uri = [endpoint, version, 'address', 'validate?'].join('/')
 
-    uri += set_address_params(address)
+    encodedquery = Addressable::URI.new
+    encodedquery.query_values = set_address_params(address)
+    uri += encodedquery.query
 
     response = API.get(uri,
                         :headers => API.headers_for('0'),
@@ -120,7 +123,7 @@ module Avalara
 
     return case response.code
              when 200..299
-               valid_zip_code?(address, response["Address"])
+               raise Error.new('Invalid Address') unless address_match?(address, response["Address"])
                Response::TaxAddress.new(response)
              when 400..599
                raise Error.new(response["Messages"].first["Summary"]) unless response["Messages"].first["Summary"].eql?('Country not supported.')
@@ -142,19 +145,20 @@ module Avalara
     { :username => username, :password => password}
   end
 
-  def self.valid_zip_code? address, response_address
-    postal_code = response_address["PostalCode"].split('-')[0]
-    raise Error.new('Invalid ZIP/Postal Code.') unless postal_code.eql?(address.zipcode)
+  def self.address_match? address, response_address
+    state = ((address.state && address.state.abbr) || (address.state_name || ''))
+    response_address["City"].eql?(address.city) && response_address["Region"].eql?(state) &&
+      response_address["PostalCode"].split('-').first.eql?(address.zipcode) && response_address["Country"].eql?(address.country.iso)
   end
 
   def self.set_address_params address
-    line1 = address.address1.gsub(/[\s#]/, ' ' => '+', '#' => '')
-    line2 = address.address2.gsub(/[\s#]/, ' ' => '+', '#' => '')
-    city = address.city.gsub(/[\s#]/, ' ' => '+', '#' => '')
-    state = ((address.state && address.state.abbr) || (address.state_name || '')).gsub(/[\s#]/, ' ' => '+', '#' => '')
-    zip_code = address.zipcode.gsub(/[\s#]/, ' ' => '+', '#' => '')
-    country = address.country.iso.gsub(/[\s#]/, ' ' => '+', '#' => '')
-
-    %Q(Line1=#{line1}&Line2=#{line2}&City=#{city}&Region=#{state}&PostalCode=#{zip_code}&Country=#{country})
+    {
+      :Line1 => address.address1,
+      :Line2 => address.address2,
+      :City => address.city,
+      :Region => ((address.state && address.state.abbr) || (address.state_name || '')),
+      :PostalCode => address.zipcode,
+      :Country => address.country && address.country.iso || ''
+    }
   end
 end
