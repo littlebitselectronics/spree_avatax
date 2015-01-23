@@ -167,5 +167,8 @@ module Spree
 
     end
 
+    def validate_shipping_address
+      Avalara.validate_address(self.shipping_address)
+    end
   end
 end

@@ -108,9 +108,53 @@ module Avalara
     raise Error.new(e)
   end
 
+  def self.validate_address(address)
+    uri = [endpoint, version, 'address', 'validate?'].join('/')
+
+    uri += set_address_params(address)
+
+    response = API.get(uri,
+                        :headers => API.headers_for('0'),
+                        :basic_auth => authentication
+    )
+
+    return case response.code
+             when 200..299
+               valid_zip_code?(address, response["Address"])
+               Response::TaxAddress.new(response)
+             when 400..599
+               raise Error.new(response["Messages"].first["Summary"]) unless response["Messages"].first["Summary"].eql?('Country not supported.')
+             else
+               raise ApiError.new(response)
+           end
+  rescue Timeout::Error => e
+    raise TimeoutError.new(e)
+  rescue ApiError => e
+    raise e
+  rescue Exception => e
+    raise Error.new(e)
+
+  end
+
   private
 
   def self.authentication
     { :username => username, :password => password}
+  end
+
+  def self.valid_zip_code? address, response_address
+    postal_code = response_address["PostalCode"].split('-')[0]
+    raise Error.new('Invalid ZIP/Postal Code.') unless postal_code.eql?(address.zipcode)
+  end
+
+  def self.set_address_params address
+    line1 = address.address1.gsub(/[\s#]/, ' ' => '+', '#' => '')
+    line2 = address.address2.gsub(/[\s#]/, ' ' => '+', '#' => '')
+    city = address.city.gsub(/[\s#]/, ' ' => '+', '#' => '')
+    state = ((address.state && address.state.abbr) || (address.state_name || '')).gsub(/[\s#]/, ' ' => '+', '#' => '')
+    zip_code = address.zipcode.gsub(/[\s#]/, ' ' => '+', '#' => '')
+    country = address.country.iso.gsub(/[\s#]/, ' ' => '+', '#' => '')
+
+    %Q(Line1=#{line1}&Line2=#{line2}&City=#{city}&Region=#{state}&PostalCode=#{zip_code}&Country=#{country})
   end
 end
