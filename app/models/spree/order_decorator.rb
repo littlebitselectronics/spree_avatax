@@ -100,6 +100,73 @@ module Spree
 
     end
 
+    def estimate_avatax(variant, quantity)
+
+      begin
+
+        invoice_lines =[]
+        line_count = 0
+
+        line_count = line_count + 1
+        invoice_line = Avalara::Request::Line.new(
+          :line_no => line_count.to_s,
+          :destination_code => '1',
+          :origin_code => '1',
+          :qty => quantity.to_s,
+          :amount => variant.price.to_s,
+          :discounted => true,
+          :item_code => variant.sku,
+          :tax_code => ''
+        )
+        invoice_lines << invoice_line
+
+        invoice_line = Avalara::Request::Line.new(
+          :line_no => (line_count + 1).to_s,
+          :destination_code => '1',
+          :origin_code => '1',
+          :qty => 1,
+          :amount => self.ship_total.to_s,
+          :tax_code => 'FR',
+          :discounted => true,
+          :item_code => 'SHIPPING'
+        )
+        invoice_lines << invoice_line
+
+        invoice_addresses = []
+        invoice_address = Avalara::Request::Address.new(
+          :address_code => '1',
+          :line_1 => self.ship_address.address1.to_s,
+          :line_2 => self.ship_address.address2.to_s,
+          :city => self.ship_address.city.to_s,
+          :postal_code => self.ship_address.zipcode.to_s
+        )
+        invoice_addresses << invoice_address
+
+        invoice = Avalara::Request::Invoice.new(
+          :customer_code => self.email,
+          :doc_date => Date.today,
+          :doc_type => 'SalesOrder',
+          :doc_code => self.number,
+          :company_code => AvataxConfig.company_code,
+          :reference_code => self.number,
+          :commit => 'true',
+          :discount => 0.0,
+          :exemption_no => nil
+        )
+
+        invoice.addresses = invoice_addresses
+        invoice.lines = invoice_lines
+
+        Rails.logger.info "Avatax Single - POST started"
+        invoice_tax = Avalara.get_tax(invoice)
+
+      rescue => error
+        logger.debug 'Avatax Estimate Failed!'
+        logger.debug error.to_s
+      end
+
+    end
+
     def validate_shipping_address
       Avalara.validate_address(self.shipping_address)
     end
