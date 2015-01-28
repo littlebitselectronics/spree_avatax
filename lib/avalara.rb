@@ -147,8 +147,10 @@ module Avalara
 
   def self.address_match? address, response_address
     state = ((address.state && address.state.abbr) || (address.state_name || ''))
-    response_address["City"].eql?(address.city) && response_address["Region"].eql?(state) &&
-      response_address["PostalCode"].split('-').first.eql?(address.zipcode) && response_address["Country"].eql?(address.country.iso)
+    response_address["City"].downcase.eql?(address.city.downcase) &&
+      response_address["Region"].downcase.eql?(state.downcase) &&
+      response_address["PostalCode"].split('-').first.downcase.eql?(address.zipcode.downcase) &&
+      response_address["Country"].downcase.eql?(address.country.iso.downcase)
   end
 
   def self.set_address_params address
