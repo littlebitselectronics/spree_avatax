@@ -123,7 +123,7 @@ module Avalara
 
     return case response.code
              when 200..299
-               raise Error.new('Invalid Address') unless address_match?(address, response["Address"])
+               address_match?(address, response["Address"])
                Response::TaxAddress.new(response)
              when 400..599
                raise Error.new(response["Messages"].first["Summary"]) unless response["Messages"].first["Summary"].eql?('Country not supported.')
@@ -146,12 +146,14 @@ module Avalara
   end
 
   def self.address_match? address, response_address
+    errors = []
     state = ((address.state && address.state.abbr) || (address.state_name || ''))
     response_address.each { |k,v| v.downcase! }
-    response_address["City"].eql?(address.city.downcase) &&
-      response_address["Region"].eql?(state.downcase) &&
-      response_address["PostalCode"].split('-').first.eql?(address.zipcode.downcase) &&
-      response_address["Country"].eql?(address.country.iso.downcase)
+    errors << 'Invalid City' unless response_address["City"].eql?(address.city.downcase)
+    errors << 'Invalid State' unless  response_address["Region"].eql?(state.downcase)
+    errors << 'Invalid PostalCode' unless response_address["PostalCode"].split('-').first.eql?(address.zipcode.downcase)
+    errors << 'Invalid Country' unless  response_address["Country"].eql?(address.country.iso.downcase)
+    raise Error.new(errors) unless errors.blank?
   end
 
   def self.set_address_params address
