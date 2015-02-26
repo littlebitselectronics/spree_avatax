@@ -151,7 +151,7 @@ module Avalara
     response_address.each { |k,v| v.downcase! }
     errors << "Invalid City : #{response_address['City']}" unless response_address["City"].eql?(address.city.downcase)
     errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].eql?(state.downcase)
-    errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_address["PostalCode"].split('-').first.eql?(address.zipcode.downcase)
+    errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_address["PostalCode"].include?(address.zipcode.downcase)
     errors << "Invalid Country" unless  response_address["Country"].eql?(address.country.iso.downcase)
     raise Error.new(errors) unless errors.blank?
   end
