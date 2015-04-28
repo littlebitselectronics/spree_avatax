@@ -113,7 +113,7 @@ module Avalara
     uri = [endpoint, version, 'address', 'validate?'].join('/')
 
     encodedquery = Addressable::URI.new
-    encodedquery.query_values = set_address_params(address)
+    encodedquery.query_values = address_params(address)
     uri += encodedquery.query
 
     response = API.get(uri,
@@ -123,7 +123,7 @@ module Avalara
 
     return case response.code
              when 200..299
-               address_match?(address, response["Address"])
+               address_match?(encodedquery.query_values, response["Address"])
                Response::TaxAddress.new(response)
              when 400..599
                raise Error.new(response["Messages"].first["Summary"]) unless response["Messages"].first["Summary"].eql?('Country not supported.')
@@ -147,16 +147,16 @@ module Avalara
 
   def self.address_match? address, response_address
     errors = []
-    state = ((address.state && address.state.abbr) || (address.state_name || ''))
+    address.each { |k,v| v.downcase! }
     response_address.each { |k,v| v.downcase! }
-    errors << "Invalid City : #{response_address['City']}" unless response_address["City"].eql?(address.city.downcase)
-    errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].eql?(state.downcase)
-    errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_address["PostalCode"].include?(address.zipcode.downcase)
-    errors << "Invalid Country" unless  response_address["Country"].eql?(address.country.iso.downcase)
+    errors << "Invalid City : #{response_address['City']}" unless response_address["City"].eql?(address["City"].strip)
+    errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].eql?(address["Region"].strip)
+    errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_address["PostalCode"].split('-').first.eql?(address["PostalCode"].strip)
+    errors << "Invalid Country" unless  response_address["Country"].eql?(address["Country"])
     raise Error.new(errors) unless errors.blank?
   end
 
-  def self.set_address_params address
+  def self.address_params address
     {
       :Line1 => address.address1,
       :Line2 => address.address2,
