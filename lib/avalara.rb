@@ -149,10 +149,14 @@ module Avalara
     errors = []
     address.each { |k,v| v.downcase! }
     response_address.each { |k,v| v.downcase! }
-    errors << "Invalid City : #{response_address['City']}" unless response_address["City"].eql?(address["City"].strip)
-    errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].eql?(address["Region"].strip)
-    errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_address["PostalCode"].split('-').first.eql?(address["PostalCode"].strip)
-    errors << "Invalid Country" unless  response_address["Country"].eql?(address["Country"])
+
+    response_zipcode = response_address["PostalCode"].split('-').first.strip
+    zip_code = address["PostalCode"].split('-').first.strip
+
+    errors << "Invalid City : #{response_address['City']}" unless response_address["City"].strip.eql?(address["City"].strip)
+    errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].strip.eql?(address["Region"].strip)
+    errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_zipcode.eql?(zip_code)
+    errors << "Invalid Country" unless  response_address["Country"].strip.eql?(address["Country"].strip)
     raise Error.new(errors) unless errors.blank?
   end
 
