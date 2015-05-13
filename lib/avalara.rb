@@ -11,6 +11,10 @@ require 'addressable/uri'
 
 module Avalara
 
+  NUMBER_OUT_RANGE = 'number is out of range'
+  ADDRESS_NAME_MISMATCH = 'street name match could not be found'
+  INCOMPLETE_ADDRESS = 'Address is incomplete or invalid'
+
   def self.configuration
     @@_configuration ||= Avalara::Configuration.new
     yield @@_configuration if block_given?
@@ -97,7 +101,8 @@ module Avalara
              when 200..299
                Response::Invoice.new(response)
              when 400..599
-               raise ApiError.new(Response::Invoice.new(response))
+               summary = response["Messages"].first["Summary"]
+               return_invalid_address_error(summary)
              else
                raise ApiError.new(response)
            end
@@ -107,6 +112,12 @@ module Avalara
     raise e
   rescue Exception => e
     raise Error.new(e)
+  end
+
+  def self.return_invalid_address_error(error_msg)
+    errors = []
+    errors << "Invalid Address1 : #{error_msg}" if error_msg.match(INCOMPLETE_ADDRESS)
+    raise Error.new(errors) unless errors.blank?
   end
 
   def self.validate_address(address)
@@ -126,7 +137,8 @@ module Avalara
                address_match?(encodedquery.query_values, response["Address"])
                Response::TaxAddress.new(response)
              when 400..599
-               raise Error.new(response["Messages"].first["Summary"]) unless response["Messages"].first["Summary"].eql?('Country not supported.')
+               summary = response["Messages"].first["Summary"]
+               avalara_address_error(summary) unless summary == 'Country not supported.'
              else
                raise ApiError.new(response)
            end
@@ -136,7 +148,6 @@ module Avalara
     raise e
   rescue Exception => e
     raise Error.new(e)
-
   end
 
   private
@@ -156,8 +167,25 @@ module Avalara
     errors << "Invalid City : #{response_address['City']}" unless response_address["City"].strip.eql?(address["City"].strip)
     errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].strip.eql?(address["Region"].strip)
     errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_zipcode.eql?(zip_code)
-    errors << "Invalid Country" unless  response_address["Country"].strip.eql?(address["Country"].strip)
+    errors << "Invalid Country" unless response_address["Country"].strip.eql?(address["Country"].strip)
+    errors << "Invalid Address1 : #{response_address['Line1']}" if address1_has_differences?(response_address, address)
+    errors << "Invalid Address2 : #{response_address['Line2']}" if address2_has_differences?(response_address, address)
     raise Error.new(errors) unless errors.blank?
+  end
+
+  def self.avalara_address_error(response)
+    errors = []
+    errors << "Invalid Address1 : #{response}" if response.match(NUMBER_OUT_RANGE)
+    errors << "Invalid Address1 : #{response}" if response.match(ADDRESS_NAME_MISMATCH)
+    raise Error.new(errors) if errors.present?
+  end
+
+  def self.address2_has_differences?(resp_address, address)
+    resp_address['Line2'] && resp_address["Line2"].strip != (address["Line2"].strip)
+  end
+
+  def self.address1_has_differences?(resp_address, address)
+    resp_address['Line1'] && resp_address["Line1"].strip != (address["Line1"].strip)
   end
 
   def self.address_params address

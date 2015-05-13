@@ -95,7 +95,6 @@ module Spree
       rescue => error
         logger.debug 'Avatax Commit Failed!'
         logger.debug error.to_s
-        raise Avalara::Error.new error.to_s
       end
 
     end
