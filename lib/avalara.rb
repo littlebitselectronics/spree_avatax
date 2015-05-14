@@ -14,6 +14,7 @@ module Avalara
   NUMBER_OUT_RANGE = 'number is out of range'
   ADDRESS_NAME_MISMATCH = 'street name match could not be found'
   INCOMPLETE_ADDRESS = 'Address is incomplete or invalid'
+  INVALID_ZIPCODE = 'Invalid ZIP/Postal Code.'
 
   def self.configuration
     @@_configuration ||= Avalara::Configuration.new
@@ -177,6 +178,7 @@ module Avalara
     errors = []
     errors << "Invalid Address1 : #{response}" if response.match(NUMBER_OUT_RANGE)
     errors << "Invalid Address1 : #{response}" if response.match(ADDRESS_NAME_MISMATCH)
+    errors << "Invalid PostalCode : #{response}" if response.match(INVALID_ZIPCODE)
     raise Error.new(errors) if errors.present?
   end
 
