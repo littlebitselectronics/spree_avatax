@@ -175,7 +175,6 @@ module Avalara
   def self.avalara_address_error(response)
     errors = []
     errors << "Invalid Address1 : #{response}" if response.match(NUMBER_OUT_RANGE)
-    errors << "Invalid Address1 : #{response}" if response.match(ADDRESS_NAME_MISMATCH)
     errors << "Invalid PostalCode : #{response}" if response.match(INVALID_ZIPCODE)
     raise Error.new(errors) if errors.present?
   end
