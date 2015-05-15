@@ -169,8 +169,6 @@ module Avalara
     errors << "Invalid State : #{response_address['Region']}"  unless  response_address["Region"].strip.eql?(address["Region"].strip)
     errors << "Invalid PostalCode : #{response_address['PostalCode']}" unless response_zipcode.eql?(zip_code)
     errors << "Invalid Country" unless response_address["Country"].strip.eql?(address["Country"].strip)
-    errors << "Invalid Address1 : #{response_address['Line1']}" if address1_has_differences?(response_address, address)
-    errors << "Invalid Address2 : #{response_address['Line2']}" if address2_has_differences?(response_address, address)
     raise Error.new(errors) unless errors.blank?
   end
 
