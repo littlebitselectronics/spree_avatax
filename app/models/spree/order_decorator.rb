@@ -19,13 +19,15 @@ module Spree
 
         invoice_lines =[]
         line_count = 0
-
+        binding.pry
         discount = 0
         credits = self.adjustments.select {|a| a.amount < 0 && a.source_type == 'Spree::PromotionAction'}
         discount = -(credits.sum &:amount)
         matched_line_items.each do |matched_line_item|
           line_count = line_count + 1
-          matched_line_amount = matched_line_item.price * matched_line_item.quantity
+#          matched_line_amount = matched_line_item.price * matched_line_item.quantity
+          matched_line_amount=adsasddas.ds.sfds
+          line_item_discounts = matched_line_item.adjustments.selct
           invoice_line = Avalara::Request::Line.new(
               :line_no => line_count.to_s,
               :destination_code => '1',
