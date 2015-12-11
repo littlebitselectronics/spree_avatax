@@ -21,13 +21,18 @@ module Spree
         line_count = 0
         binding.pry
         discount = 0
+        line-item-discounts = 0
         credits = self.adjustments.select {|a| a.amount < 0 && a.source_type == 'Spree::PromotionAction'}
         discount = -(credits.sum &:amount)
         matched_line_items.each do |matched_line_item|
           line_count = line_count + 1
-#          matched_line_amount = matched_line_item.price * matched_line_item.quantity
-          matched_line_amount=adsasddas.ds.sfds
-          line_item_discounts = matched_line_item.adjustments.selct
+          matched_line_amount = matched_line_item.price * matched_line_item.quantity
+          matched_line_item.adjustments.each {|a| 
+            if (a.amount < 0 && a.source_type == 'Spree::PromotionAction') 
+              matched_line_amount+=a.amount
+              line-item-discounts +=a.amount
+              end
+            }
           invoice_line = Avalara::Request::Line.new(
               :line_no => line_count.to_s,
               :destination_code => '1',
@@ -46,7 +51,7 @@ module Spree
             :destination_code => '1',
             :origin_code => '1',
             :qty => 1,
-            :amount => self.ship_total.to_s,
+            :amount => (self.ship_total-line-item-discounts).to_s,
             :tax_code => 'FR',
             :discounted => true,
             :item_code => 'SHIPPING'
@@ -163,10 +168,10 @@ module Spree
         Rails.logger.info "Avatax Single - POST started"
         invoice_tax = Avalara.get_tax(invoice)
 
-      rescue => error
-        logger.debug 'Avatax Estimate Failed!'
-        logger.debug error.to_s
-      end
+      # rescue => error
+      #   logger.debug 'Avatax Estimate Failed!'
+      #   logger.debug error.to_s
+     end
 
     end
 
