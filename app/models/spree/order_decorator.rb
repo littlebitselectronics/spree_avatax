@@ -76,12 +76,8 @@ module Spree
 
         invoice.addresses = invoice_addresses
         invoice.lines = invoice_lines
-        binding.pry
         Rails.logger.info "Avatax POST started"
         invoice_tax = Avalara.get_tax(invoice)
-p "----------------------"
-p invoice
- p invoice_tax       
         #Tax
         if doc_type == 'SalesOrder'
           tax_line = invoice_tax[:tax_lines].first
@@ -97,7 +93,6 @@ p invoice
         end
 
        rescue => error
-          binding.pry
          logger.debug 'Avatax Commit Failed!'
          logger.debug error.to_s
     end
