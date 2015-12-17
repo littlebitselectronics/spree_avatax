@@ -15,14 +15,13 @@ module Spree
           line_item.taxable?
         end
 
-        invoice_lines =[]
+        invoice_lines = []
         line_count = 0
         discount = 0
-        line_items_discount = 0
         credits = self.adjustments.select {|a| a.amount < 0 && a.source_type == 'Spree::PromotionAction'}
         discount = -(credits.sum &:amount)
         matched_line_items.each do |matched_line_item|
-          line_count = line_count + 1
+          line_count += 1
           matched_line_amount = matched_line_item.price * matched_line_item.quantity
           matched_line_amount += matched_line_item.adjustments.where(source_type:'Spree::PromotionAction').sum(:amount)
           invoice_line = Avalara::Request::Line.new(
@@ -70,7 +69,7 @@ module Spree
             :company_code => AvataxConfig.company_code,
             :reference_code => self.number,
             :commit => 'true',
-            :discount => discount - line_items_discount,
+            :discount => discount,
             :exemption_no => exemption_no
         )
 
@@ -104,7 +103,7 @@ module Spree
         invoice_lines =[]
         line_count = 0
 
-        line_count = line_count + 1
+        line_count += 1
         invoice_line = Avalara::Request::Line.new(
           :line_no => line_count.to_s,
           :destination_code => '1',
