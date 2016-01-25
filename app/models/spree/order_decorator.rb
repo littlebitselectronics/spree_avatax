@@ -11,21 +11,19 @@ module Spree
     end
 
     def commit_avatax_invoice(doc_type)
-
-      begin
         matched_line_items = self.line_items.select do |line_item|
           line_item.taxable?
         end
 
-        invoice_lines =[]
+        invoice_lines = []
         line_count = 0
-
         discount = 0
         credits = self.adjustments.select {|a| a.amount < 0 && a.source_type == 'Spree::PromotionAction'}
         discount = -(credits.sum &:amount)
         matched_line_items.each do |matched_line_item|
-          line_count = line_count + 1
+          line_count += 1
           matched_line_amount = matched_line_item.price * matched_line_item.quantity
+          matched_line_amount += matched_line_item.adjustments.where(source_type:'Spree::PromotionAction').sum(:amount)
           invoice_line = Avalara::Request::Line.new(
               :line_no => line_count.to_s,
               :destination_code => '1',
@@ -77,7 +75,6 @@ module Spree
 
         invoice.addresses = invoice_addresses
         invoice.lines = invoice_lines
-
         Rails.logger.info "Avatax POST started"
         invoice_tax = Avalara.get_tax(invoice)
         #Tax
@@ -94,11 +91,9 @@ module Spree
           save!
         end
 
-      rescue => error
-        logger.debug 'Avatax Commit Failed!'
-        logger.debug error.to_s
-      end
-
+       rescue => error
+         logger.debug 'Avatax Commit Failed!'
+         logger.debug error.to_s
     end
 
     def estimate_avatax(variant, quantity)
@@ -108,7 +103,7 @@ module Spree
         invoice_lines =[]
         line_count = 0
 
-        line_count = line_count + 1
+        line_count += 1
         invoice_line = Avalara::Request::Line.new(
           :line_no => line_count.to_s,
           :destination_code => '1',
