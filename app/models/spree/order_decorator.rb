@@ -22,7 +22,6 @@ module Spree
         matched_line_items.each do |matched_line_item|
           line_count += 1
           matched_line_amount = matched_line_item.price * matched_line_item.quantity
-          matched_line_amount += calculate_line_item_adjustments(matched_line_item)
           invoice_line = Avalara::Request::Line.new(
               :line_no => line_count.to_s,
               :destination_code => '1',
@@ -168,11 +167,8 @@ module Spree
     private
 
     def calculate_order_discounts
-     # Get all order adjustments except the Tax Adjustments
-      # and Line Item adjustments, the last one because those
-      # are include in each line item sent to Avalara
-      credits = self.all_adjustments.eligible.select do |a|
-        a.amount < 0 && (a.source_type != 'Spree::TaxRate' && a.adjustable_type != 'Spree::LineItem')
+      credits = self.all_adjustments.eligible.select do |adjustment|
+        adjustment.amount < 0 && valid_adjustment?(adjustment)
       end
 
       credits.sum(&:amount).abs
@@ -180,11 +176,16 @@ module Spree
 
     def calculate_line_item_adjustments(line_item)
       li_adjustments = line_item.adjustments.eligible
-      li_adjustments.where(source_type:'Spree::PromotionAction').sum(:amount)
+      li_adjustments.where(source_type: 'Spree::PromotionAction').sum(:amount)
     end
 
     def create_tax_adjustment?(doc_type)
       doc_type.eql?("SalesOrder") || doc_type.eql?("SalesInvoice")
+    end
+
+    def valid_adjustment?(adjustment)
+      adjustment.source_type != 'Spree::TaxRate' &&
+        adjustment.source_type != 'Spree::GiftCard'
     end
   end
 end
