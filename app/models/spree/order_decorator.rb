@@ -18,12 +18,10 @@ module Spree
         invoice_lines = []
         line_count = 0
         discount = 0
-        credits = self.adjustments.select {|a| a.amount < 0 && a.source_type == 'Spree::PromotionAction'}
-        discount = -(credits.sum &:amount)
+        discount = calculate_order_discounts
         matched_line_items.each do |matched_line_item|
           line_count += 1
           matched_line_amount = matched_line_item.price * matched_line_item.quantity
-          matched_line_amount += matched_line_item.adjustments.where(source_type:'Spree::PromotionAction').sum(:amount)
           invoice_line = Avalara::Request::Line.new(
               :line_no => line_count.to_s,
               :destination_code => '1',
@@ -75,10 +73,9 @@ module Spree
 
         invoice.addresses = invoice_addresses
         invoice.lines = invoice_lines
-        Rails.logger.info "Avatax POST started"
+        Rails.logger.info "Avatax POST started: Parameters #{invoice.inspect}"
         invoice_tax = Avalara.get_tax(invoice)
-        #Tax
-        if doc_type == 'SalesOrder'
+        if create_tax_adjustment?(doc_type)
           tax_line = invoice_tax[:tax_lines].first
           self.adjustments.tax.destroy_all
           tax_adjustment = self.adjustments.new
@@ -165,6 +162,30 @@ module Spree
 
     def validate_shipping_address
       Avalara.validate_address(self.shipping_address)
+    end
+
+    private
+
+    def calculate_order_discounts
+      credits = self.all_adjustments.eligible.select do |adjustment|
+        adjustment.amount < 0 && valid_adjustment?(adjustment)
+      end
+
+      credits.sum(&:amount).abs
+    end
+
+    def calculate_line_item_adjustments(line_item)
+      li_adjustments = line_item.adjustments.eligible
+      li_adjustments.where(source_type: 'Spree::PromotionAction').sum(:amount)
+    end
+
+    def create_tax_adjustment?(doc_type)
+      doc_type.eql?("SalesOrder") || doc_type.eql?("SalesInvoice")
+    end
+
+    def valid_adjustment?(adjustment)
+      adjustment.source_type != 'Spree::TaxRate' &&
+        adjustment.source_type != 'Spree::GiftCard'
     end
   end
 end
