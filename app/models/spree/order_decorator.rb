@@ -19,8 +19,7 @@ module Spree
         line_count = 0
         discount = 0
         discount = calculate_order_discounts
-        charge = 0
-        charge = calculate_order_charge
+        positive_adjustment = calculate_order_positive_adjustment
         matched_line_items.each do |matched_line_item|
           line_count += 1
           matched_line_amount = matched_line_item.price * matched_line_item.quantity
@@ -51,18 +50,21 @@ module Spree
 
         invoice_lines << invoice_line
 
-        charge_line = Avalara::Request::Line.new(
-            :line_no => (line_count + 1).to_s,
+        if positive_adjustment > 0
+          line_count += 1
+          positive_adjustment_line = Avalara::Request::Line.new(
+            :line_no => line_count.to_s,
             :destination_code => '1',
             :origin_code => '1',
             :qty => 1,
-            :amount => charge.to_s,
-            :tax_code => 'FR',
+            :amount => positive_adjustment.to_s,
+            :tax_code => '',
             :discounted => true,
             :item_code => 'CHARGE'
-        )
+          )
 
-        invoice_lines << charge_line if charge > 0
+          invoice_lines << positive_adjustment_line
+        end
 
         invoice_addresses = []
         invoice_address = Avalara::Request::Address.new(
@@ -191,7 +193,7 @@ module Spree
       credits.sum(&:amount).abs
     end
 
-    def calculate_order_charge
+    def calculate_order_positive_adjustment
       credits = self.all_adjustments.eligible.select do |adjustment|
         adjustment.amount > 0 && valid_adjustment?(adjustment)
       end
